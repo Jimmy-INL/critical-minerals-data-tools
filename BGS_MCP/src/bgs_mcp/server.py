@@ -54,11 +54,27 @@ async def list_commodities(critical_only: bool = False) -> str:
             battery.append(c)
         elif "rare earth" in cl:
             rare_earth.append(c)
-        elif any(x in cl for x in ["platinum", "vanadium", "tungsten", "chromium", "tantalum", "niobium", "titanium"]):
+        elif any(
+            x in cl
+            for x in [
+                "platinum",
+                "vanadium",
+                "tungsten",
+                "chromium",
+                "tantalum",
+                "niobium",
+                "titanium",
+            ]
+        ):
             strategic.append(c)
-        elif any(x in cl for x in ["gallium", "germanium", "indium", "beryl", "selenium", "rhenium"]):
+        elif any(
+            x in cl for x in ["gallium", "germanium", "indium", "beryl", "selenium", "rhenium"]
+        ):
             technology.append(c)
-        elif any(x in cl for x in ["copper", "zinc", "lead", "tin", "aluminium", "bauxite", "alumina", "iron"]):
+        elif any(
+            x in cl
+            for x in ["copper", "zinc", "lead", "tin", "aluminium", "bauxite", "alumina", "iron"]
+        ):
             base.append(c)
         elif any(x in cl for x in ["gold", "silver"]):
             precious.append(c)
@@ -158,7 +174,9 @@ async def search_production(
     )
 
     if not records:
-        return f"No {statistic_type.lower()} data found for {commodity}" + (f" in {country}" if country else "")
+        return f"No {statistic_type.lower()} data found for {commodity}" + (
+            f" in {country}" if country else ""
+        )
 
     output = f"**{commodity} - {statistic_type}**\n\n"
     if country:

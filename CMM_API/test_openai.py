@@ -19,12 +19,32 @@ def get_functions():
 def call_api(function_name: str, arguments: dict) -> dict:
     """Call the CMM API based on function name."""
     endpoints = {
-        "search_all_sources": ("/search", {"q": arguments.get("query"), "sources": arguments.get("sources", "CLAIMM,BGS"), "limit": arguments.get("limit", 20)}),
+        "search_all_sources": (
+            "/search",
+            {
+                "q": arguments.get("query"),
+                "sources": arguments.get("sources", "CLAIMM,BGS"),
+                "limit": arguments.get("limit", 20),
+            },
+        ),
         "get_bgs_production": ("/bgs/production", arguments),
-        "get_commodity_ranking": (f"/bgs/ranking/{arguments.get('commodity', '')}", {"year": arguments.get("year"), "top_n": arguments.get("top_n", 15)}),
-        "search_claimm_datasets": ("/claimm/datasets", {"q": arguments.get("query"), "tags": arguments.get("tags"), "limit": arguments.get("limit", 20)}),
+        "get_commodity_ranking": (
+            f"/bgs/ranking/{arguments.get('commodity', '')}",
+            {"year": arguments.get("year"), "top_n": arguments.get("top_n", 15)},
+        ),
+        "search_claimm_datasets": (
+            "/claimm/datasets",
+            {
+                "q": arguments.get("query"),
+                "tags": arguments.get("tags"),
+                "limit": arguments.get("limit", 20),
+            },
+        ),
         "get_claimm_dataset_details": (f"/claimm/datasets/{arguments.get('dataset_id', '')}", {}),
-        "list_bgs_commodities": ("/bgs/commodities", {"critical_only": arguments.get("critical_only", False)}),
+        "list_bgs_commodities": (
+            "/bgs/commodities",
+            {"critical_only": arguments.get("critical_only", False)},
+        ),
         "get_data_overview": ("/overview", {}),
     }
 
@@ -44,8 +64,11 @@ def ask_cmm(question: str) -> str:
     functions = get_functions()
 
     messages = [
-        {"role": "system", "content": "You are a critical minerals analyst. Use the available tools to answer questions about mineral production, supply chains, and datasets. Be concise."},
-        {"role": "user", "content": question}
+        {
+            "role": "system",
+            "content": "You are a critical minerals analyst. Use the available tools to answer questions about mineral production, supply chains, and datasets. Be concise.",
+        },
+        {"role": "user", "content": question},
     ]
 
     response = client.chat.completions.create(
@@ -68,11 +91,13 @@ def ask_cmm(question: str) -> str:
             print(f"  → Calling {func_name}({func_args})")
             result = call_api(func_name, func_args)
 
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "content": json.dumps(result)[:8000]  # Truncate large responses
-            })
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": json.dumps(result)[:8000],  # Truncate large responses
+                }
+            )
 
         response = client.chat.completions.create(
             model="gpt-4o",

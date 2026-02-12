@@ -180,8 +180,12 @@ class OSTIClient:
                 commodity_category=row.get("commodity_category"),
                 doi=row.get("doi"),
                 product_type=row.get("product_type"),
-                research_orgs=row.get("research_orgs", []) if isinstance(row.get("research_orgs"), list) else [],
-                sponsor_orgs=row.get("sponsor_orgs", []) if isinstance(row.get("sponsor_orgs"), list) else [],
+                research_orgs=row.get("research_orgs", [])
+                if isinstance(row.get("research_orgs"), list)
+                else [],
+                sponsor_orgs=row.get("sponsor_orgs", [])
+                if isinstance(row.get("sponsor_orgs"), list)
+                else [],
             )
             documents.append(doc)
 
@@ -213,17 +217,19 @@ class OSTIClient:
             commodity_category=row.get("commodity_category"),
             doi=row.get("doi"),
             product_type=row.get("product_type"),
-            research_orgs=row.get("research_orgs", []) if isinstance(row.get("research_orgs"), list) else [],
-            sponsor_orgs=row.get("sponsor_orgs", []) if isinstance(row.get("sponsor_orgs"), list) else [],
+            research_orgs=row.get("research_orgs", [])
+            if isinstance(row.get("research_orgs"), list)
+            else [],
+            sponsor_orgs=row.get("sponsor_orgs", [])
+            if isinstance(row.get("sponsor_orgs"), list)
+            else [],
         )
 
     def list_commodities(self) -> dict[str, str]:
         """List available commodity categories with descriptions."""
         return self.COMMODITIES.copy()
 
-    def get_documents_by_commodity(
-        self, commodity: str, limit: int = 100
-    ) -> list[OSTIDocument]:
+    def get_documents_by_commodity(self, commodity: str, limit: int = 100) -> list[OSTIDocument]:
         """Get documents for a specific commodity category.
 
         Args:
@@ -260,8 +266,12 @@ class OSTIClient:
                 commodity_category=row.get("commodity_category"),
                 doi=row.get("doi"),
                 product_type=row.get("product_type"),
-                research_orgs=row.get("research_orgs", []) if isinstance(row.get("research_orgs"), list) else [],
-                sponsor_orgs=row.get("sponsor_orgs", []) if isinstance(row.get("sponsor_orgs"), list) else [],
+                research_orgs=row.get("research_orgs", [])
+                if isinstance(row.get("research_orgs"), list)
+                else [],
+                sponsor_orgs=row.get("sponsor_orgs", [])
+                if isinstance(row.get("sponsor_orgs"), list)
+                else [],
             )
             documents.append(doc)
 

@@ -35,9 +35,7 @@ class ComtradeClient:
             headers["Ocp-Apim-Subscription-Key"] = self.api_key
         return headers
 
-    async def _request(
-        self, url: str, params: Optional[dict[str, Any]] = None
-    ) -> dict[str, Any]:
+    async def _request(self, url: str, params: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         """Make an async request to the API."""
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.get(url, params=params, headers=self._get_headers())
@@ -164,9 +162,7 @@ class ComtradeClient:
 
         if not hs_codes:
             available = ", ".join(CRITICAL_MINERAL_HS_CODES.keys())
-            raise ValueError(
-                f"Unknown mineral: {mineral}. Available: {available}"
-            )
+            raise ValueError(f"Unknown mineral: {mineral}. Available: {available}")
 
         # Query with comma-separated HS codes
         commodity = ",".join(hs_codes)

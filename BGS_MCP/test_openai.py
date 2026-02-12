@@ -10,6 +10,7 @@ from openai import OpenAI
 BGS_API_URL = "http://127.0.0.1:8000"
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
+
 def get_openai_functions():
     """Fetch function definitions from BGS API."""
     response = httpx.get(f"{BGS_API_URL}/openai/functions")
@@ -80,15 +81,15 @@ def chat_with_tools(user_message: str) -> str:
         {
             "role": "system",
             "content": "You are a helpful assistant with access to BGS World Mineral Statistics data. "
-                       "Use the available tools to answer questions about mineral production worldwide. "
-                       "Always provide specific data when available."
+            "Use the available tools to answer questions about mineral production worldwide. "
+            "Always provide specific data when available.",
         },
-        {"role": "user", "content": user_message}
+        {"role": "user", "content": user_message},
     ]
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"User: {user_message}")
-    print('='*60)
+    print("=" * 60)
 
     # First API call
     response = client.chat.completions.create(
@@ -125,11 +126,13 @@ def chat_with_tools(user_message: str) -> str:
                 print(f"  Result: {result_str}")
 
             # Add tool result to messages
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "content": json.dumps(result),
-            })
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": json.dumps(result),
+                }
+            )
 
         # Get final response with tool results
         final_response = client.chat.completions.create(
@@ -141,9 +144,9 @@ def chat_with_tools(user_message: str) -> str:
     else:
         final_answer = assistant_message.content
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Assistant Response:")
-    print('='*60)
+    print("=" * 60)
     print(final_answer)
 
     return final_answer
@@ -151,9 +154,9 @@ def chat_with_tools(user_message: str) -> str:
 
 def main():
     """Run test queries."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("BGS REST API + OpenAI Function Calling Test")
-    print("="*60)
+    print("=" * 60)
 
     # Test queries
     queries = [

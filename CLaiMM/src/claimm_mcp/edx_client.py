@@ -149,9 +149,7 @@ class EDXClient:
         Returns:
             Resource with full metadata
         """
-        result = await self._request(
-            "GET", "resource_show", params={"id": resource_id}
-        )
+        result = await self._request("GET", "resource_show", params={"id": resource_id})
 
         return Resource(
             id=result.get("id", ""),
@@ -175,9 +173,7 @@ class EDXClient:
         Returns:
             Submission with full metadata and resources
         """
-        result = await self._request(
-            "GET", "package_show", params={"id": submission_id}
-        )
+        result = await self._request("GET", "package_show", params={"id": submission_id})
 
         resources = [
             Resource(

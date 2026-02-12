@@ -9,13 +9,21 @@ class TradeRecord(BaseModel):
 
     period: str = Field(description="Year of the trade record")
     reporter_code: int = Field(alias="reporterCode", description="Reporter country code")
-    reporter: Optional[str] = Field(alias="reporterDesc", default=None, description="Reporter country name")
+    reporter: Optional[str] = Field(
+        alias="reporterDesc", default=None, description="Reporter country name"
+    )
     partner_code: int = Field(alias="partnerCode", description="Partner country code")
-    partner: Optional[str] = Field(alias="partnerDesc", default=None, description="Partner country name")
+    partner: Optional[str] = Field(
+        alias="partnerDesc", default=None, description="Partner country name"
+    )
     flow_code: str = Field(alias="flowCode", description="Trade flow code (M/X)")
-    flow: Optional[str] = Field(alias="flowDesc", default=None, description="Trade flow description")
+    flow: Optional[str] = Field(
+        alias="flowDesc", default=None, description="Trade flow description"
+    )
     commodity_code: str = Field(alias="cmdCode", description="HS commodity code")
-    commodity: Optional[str] = Field(alias="cmdDesc", default=None, description="Commodity description")
+    commodity: Optional[str] = Field(
+        alias="cmdDesc", default=None, description="Commodity description"
+    )
     trade_value: Optional[float] = Field(
         alias="primaryValue", default=None, description="Trade value in USD"
     )
@@ -63,13 +71,24 @@ class CommodityReference(BaseModel):
 
 # Critical Minerals HS Code Mapping (CMM Focus)
 CRITICAL_MINERAL_HS_CODES: dict[str, list[str]] = {
-    "lithium": ["253090", "282520", "283691", "850650"],  # Ores, oxide/hydroxide, carbonate, batteries
+    "lithium": [
+        "253090",
+        "282520",
+        "283691",
+        "850650",
+    ],  # Ores, oxide/hydroxide, carbonate, batteries
     "cobalt": ["2605", "282200", "810520", "810590"],  # Ores, oxides, unwrought, articles
     "hree": ["284690"],  # Heavy REE compounds (Dy, Tb, etc.)
     "lree": ["284610"],  # Light REE compounds (Nd, Pr, etc.)
     "rare_earth": ["2846", "280530"],  # REE compounds, REE metals
     "graphite": ["250410", "250490", "380110"],  # Natural (amorphous, crystalline), artificial
-    "nickel": ["2604", "7501", "750210", "750220", "281122"],  # Ores, matte, unwrought, alloys, oxides
+    "nickel": [
+        "2604",
+        "7501",
+        "750210",
+        "750220",
+        "281122",
+    ],  # Ores, matte, unwrought, alloys, oxides
     "manganese": ["2602", "811100"],  # Manganese ores, unwrought
     "gallium": ["811292"],  # Gallium unwrought
     "germanium": ["811299"],  # Germanium (other base metals)

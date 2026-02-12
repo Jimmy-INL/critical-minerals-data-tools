@@ -92,9 +92,7 @@ async def list_reporters(search: Optional[str] = None, limit: int = 50) -> dict:
 
     if search:
         search_lower = search.lower()
-        reporters = [
-            r for r in reporters if search_lower in r.get("text", "").lower()
-        ]
+        reporters = [r for r in reporters if search_lower in r.get("text", "").lower()]
 
     reporters = reporters[:limit]
     return {
@@ -121,9 +119,7 @@ async def list_partners(search: Optional[str] = None, limit: int = 50) -> dict:
 
     if search:
         search_lower = search.lower()
-        partners = [
-            p for p in partners if search_lower in p.get("text", "").lower()
-        ]
+        partners = [p for p in partners if search_lower in p.get("text", "").lower()]
 
     partners = partners[:limit]
     return {
@@ -155,17 +151,14 @@ async def list_commodities(
 
     # Filter by HS level (code length)
     if hs_level in [2, 4, 6]:
-        commodities = [
-            c for c in commodities
-            if len(str(c.get("id", ""))) == hs_level
-        ]
+        commodities = [c for c in commodities if len(str(c.get("id", ""))) == hs_level]
 
     if search:
         search_lower = search.lower()
         commodities = [
-            c for c in commodities
-            if search_lower in c.get("text", "").lower()
-            or search_lower in str(c.get("id", ""))
+            c
+            for c in commodities
+            if search_lower in c.get("text", "").lower() or search_lower in str(c.get("id", ""))
         ]
 
     commodities = commodities[:limit]
@@ -338,9 +331,7 @@ async def get_commodity_trade_summary(
         return f"No {flow} data found for commodity {commodity} in {year}"
 
     # Sort by value
-    sorted_countries = sorted(
-        country_totals.items(), key=lambda x: x[1], reverse=True
-    )
+    sorted_countries = sorted(country_totals.items(), key=lambda x: x[1], reverse=True)
 
     total = sum(v for _, v in sorted_countries)
     flow_name = "Imports" if flow == "M" else "Exports"
@@ -377,6 +368,7 @@ async def get_country_trade_profile(
         Summary of country's trade in critical minerals
     """
     import asyncio
+
     client = get_client()
     profile = {
         "country_code": country,

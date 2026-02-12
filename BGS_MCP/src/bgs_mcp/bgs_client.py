@@ -232,7 +232,7 @@ class BGSClient:
             offset += fetch_limit
 
         # Sort by year descending
-        all_records.sort(key=lambda x: (x.year or 0), reverse=True)
+        all_records.sort(key=lambda x: x.year or 0, reverse=True)
 
         return all_records[:limit]
 
@@ -264,7 +264,7 @@ class BGSClient:
         )
 
         # Sort by year ascending for time series
-        records.sort(key=lambda x: (x.year or 0))
+        records.sort(key=lambda x: x.year or 0)
 
         return records
 

@@ -13,7 +13,7 @@ Provides access to two data sources:
 - CLAIMM (NETL EDX): US Critical Minerals datasets, schemas, research data
 - BGS World Mineral Statistics: Global production/trade data (1970-2023)
 
-Use these tools for supply chain analysis, research data discovery, and mineral market insights."""
+Use these tools for supply chain analysis, research data discovery, and mineral market insights.""",
 )
 
 # Initialize clients
@@ -25,6 +25,7 @@ unified = UnifiedClient()
 # ============================================================================
 # Overview Tools
 # ============================================================================
+
 
 @mcp.tool()
 async def get_data_overview() -> dict:
@@ -60,6 +61,7 @@ async def search_all_sources(
 # ============================================================================
 # BGS Tools
 # ============================================================================
+
 
 @mcp.tool()
 async def list_bgs_commodities(critical_only: bool = False) -> list[str]:
@@ -136,6 +138,7 @@ async def get_commodity_ranking(
 # CLAIMM Tools
 # ============================================================================
 
+
 @mcp.tool()
 async def search_claimm_datasets(
     query: str | None = None,
@@ -186,6 +189,7 @@ async def get_claimm_categories() -> dict[str, int]:
 # ============================================================================
 # Entry Point
 # ============================================================================
+
 
 def main():
     """Run the MCP server."""

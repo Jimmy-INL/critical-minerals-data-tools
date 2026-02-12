@@ -24,7 +24,7 @@ Data includes:
 - Geological surveys
 - Research publications
 
-All resources include direct download URLs."""
+All resources include direct download URLs.""",
 )
 
 # Initialize clients
@@ -35,6 +35,7 @@ header_detector = HeaderDetector()
 # ============================================================================
 # Dataset Search & Discovery
 # ============================================================================
+
 
 @mcp.tool()
 async def search_claimm_datasets(
@@ -75,18 +76,20 @@ async def search_claimm_datasets(
             for r in sub.resources
         ]
 
-        datasets.append({
-            "id": sub.id,
-            "title": sub.title or sub.name,
-            "description": sub.notes,
-            "author": sub.author,
-            "organization": sub.organization,
-            "tags": sub.tags,
-            "resource_count": len(resources),
-            "resources": resources,
-            "created": sub.metadata_created,
-            "modified": sub.metadata_modified,
-        })
+        datasets.append(
+            {
+                "id": sub.id,
+                "title": sub.title or sub.name,
+                "description": sub.notes,
+                "author": sub.author,
+                "organization": sub.organization,
+                "tags": sub.tags,
+                "resource_count": len(resources),
+                "resources": resources,
+                "created": sub.metadata_created,
+                "modified": sub.metadata_modified,
+            }
+        )
 
     return {
         "count": len(datasets),
@@ -148,13 +151,15 @@ async def list_claimm_datasets(limit: int = 50) -> dict:
 
     datasets = []
     for sub in submissions:
-        datasets.append({
-            "id": sub.id,
-            "title": sub.title or sub.name,
-            "tags": sub.tags,
-            "resource_count": len(sub.resources),
-            "formats": list(set(r.format for r in sub.resources if r.format)),
-        })
+        datasets.append(
+            {
+                "id": sub.id,
+                "title": sub.title or sub.name,
+                "tags": sub.tags,
+                "resource_count": len(sub.resources),
+                "formats": list(set(r.format for r in sub.resources if r.format)),
+            }
+        )
 
     return {
         "count": len(datasets),
@@ -165,6 +170,7 @@ async def list_claimm_datasets(limit: int = 50) -> dict:
 # ============================================================================
 # Resource Search & Access
 # ============================================================================
+
 
 @mcp.tool()
 async def search_resources(
@@ -247,6 +253,7 @@ def get_download_url(resource_id: str) -> str:
 # Schema Detection
 # ============================================================================
 
+
 @mcp.tool()
 async def detect_file_schema(
     resource_id: str,
@@ -284,8 +291,7 @@ async def detect_dataset_schemas(dataset_id: str) -> dict:
     # Find tabular resources
     tabular_formats = {"CSV", "XLSX", "XLS", "TSV"}
     tabular_resources = [
-        r for r in sub.resources
-        if r.format and r.format.upper() in tabular_formats
+        r for r in sub.resources if r.format and r.format.upper() in tabular_formats
     ]
 
     if not tabular_resources:
@@ -315,6 +321,7 @@ async def detect_dataset_schemas(dataset_id: str) -> dict:
 # ============================================================================
 # Statistics & Categories
 # ============================================================================
+
 
 @mcp.tool()
 async def get_claimm_statistics() -> dict:
@@ -378,20 +385,24 @@ async def get_datasets_by_category() -> dict:
         matched = False
         for category, keywords in categories.items():
             if any(kw in text for kw in keywords):
-                categorized[category].append({
-                    "id": sub.id,
-                    "title": sub.title or sub.name,
-                    "resource_count": len(sub.resources),
-                })
+                categorized[category].append(
+                    {
+                        "id": sub.id,
+                        "title": sub.title or sub.name,
+                        "resource_count": len(sub.resources),
+                    }
+                )
                 matched = True
                 break
 
         if not matched:
-            categorized["Other"].append({
-                "id": sub.id,
-                "title": sub.title or sub.name,
-                "resource_count": len(sub.resources),
-            })
+            categorized["Other"].append(
+                {
+                    "id": sub.id,
+                    "title": sub.title or sub.name,
+                    "resource_count": len(sub.resources),
+                }
+            )
 
     # Create summary
     summary = {cat: len(datasets) for cat, datasets in categorized.items()}
@@ -406,6 +417,7 @@ async def get_datasets_by_category() -> dict:
 # ============================================================================
 # Entry Point
 # ============================================================================
+
 
 def main():
     """Run the MCP server."""

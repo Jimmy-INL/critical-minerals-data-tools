@@ -132,8 +132,7 @@ async def detect_dataset_schemas(
     # Filter to requested formats
     format_list = [f.strip().upper() for f in formats.split(",")]
     tabular_resources = [
-        r for r in submission.resources
-        if r.format and r.format.upper() in format_list
+        r for r in submission.resources if r.format and r.format.upper() in format_list
     ]
 
     if not tabular_resources:
@@ -215,8 +214,7 @@ async def search_claimm_data(
         filtered = []
         for sub in results:
             matching_resources = [
-                r for r in sub.resources
-                if r.format and r.format.upper() == format_filter.upper()
+                r for r in sub.resources if r.format and r.format.upper() == format_filter.upper()
             ]
             if matching_resources:
                 sub.resources = matching_resources
@@ -235,7 +233,7 @@ async def search_claimm_data(
     for i, sub in enumerate(results[:10], 1):  # Limit to top 10 for readability
         download_section += f"{i}. **{sub.title or sub.name}**\n"
         download_section += f"   - Dataset ID: `{sub.id}`\n"
-        
+
         # Add links for each resource in the dataset
         if sub.resources:
             if len(sub.resources) == 1:
@@ -250,12 +248,14 @@ async def search_claimm_data(
                 for resource in sub.resources[:5]:  # Limit to first 5 files
                     download_url = edx.get_download_url(resource.id)
                     format_info = f" ({resource.format})" if resource.format else ""
-                    file_name = resource.name[:50] + "..." if len(resource.name) > 50 else resource.name
+                    file_name = (
+                        resource.name[:50] + "..." if len(resource.name) > 50 else resource.name
+                    )
                     download_section += f"     - {file_name}{format_info}: {download_url}\n"
                 if len(sub.resources) > 5:
                     download_section += f"     - *... and {len(sub.resources) - 5} more files*\n"
         download_section += "\n"
-    
+
     summary += download_section
 
     return summary
@@ -331,15 +331,15 @@ async def get_dataset_details(dataset_id: str) -> str:
     output = f"""**{submission.title or submission.name}**
 
 **Description:**
-{submission.notes or 'No description available.'}
+{submission.notes or "No description available."}
 
 **Metadata:**
 - ID: `{submission.id}`
-- Author: {submission.author or 'Unknown'}
-- Organization: {submission.organization or 'Unknown'}
-- Created: {submission.metadata_created or 'Unknown'}
-- Modified: {submission.metadata_modified or 'Unknown'}
-- Tags: {', '.join(submission.tags) if submission.tags else 'None'}
+- Author: {submission.author or "Unknown"}
+- Organization: {submission.organization or "Unknown"}
+- Created: {submission.metadata_created or "Unknown"}
+- Modified: {submission.metadata_modified or "Unknown"}
+- Tags: {", ".join(submission.tags) if submission.tags else "None"}
 
 **Resources ({len(submission.resources)} files):**
 """
@@ -349,7 +349,7 @@ async def get_dataset_details(dataset_id: str) -> str:
         output += f"""
 - **{r.name}**
   - ID: `{r.id}`
-  - Format: {r.format or 'Unknown'}
+  - Format: {r.format or "Unknown"}
   - Size: {size_str}
   - Download: {edx.get_download_url(r.id)}
 """
@@ -378,13 +378,13 @@ async def get_resource_details(resource_id: str) -> str:
 
 **Details:**
 - ID: `{resource.id}`
-- Format: {resource.format or 'Unknown'}
+- Format: {resource.format or "Unknown"}
 - Size: {size_str}
-- Created: {resource.created or 'Unknown'}
-- Last Modified: {resource.last_modified or 'Unknown'}
+- Created: {resource.created or "Unknown"}
+- Last Modified: {resource.last_modified or "Unknown"}
 
 **Description:**
-{resource.description or 'No description available.'}
+{resource.description or "No description available."}
 
 **Download URL:**
 {edx.get_download_url(resource.id)}
@@ -444,10 +444,7 @@ async def ask_about_data(
     # General question - search for relevant data first
     results = await edx.search_submissions(query=f"claimm {question}", limit=5)
     if results:
-        context = "\n".join([
-            f"- {s.title or s.name}: {(s.notes or '')[:200]}"
-            for s in results
-        ])
+        context = "\n".join([f"- {s.title or s.name}: {(s.notes or '')[:200]}" for s in results])
         return f"""Based on searching CLAIMM for "{question}", here are relevant datasets:
 
 {context}
@@ -530,10 +527,10 @@ async def create_dataset(
 - **Title:** {submission.title}
 - **Name:** `{submission.name}`
 - **ID:** `{submission.id}`
-- **Author:** {submission.author or 'Not specified'}
-- **Tags:** {', '.join(submission.tags) if submission.tags else 'None'}
-- **Private:** {'Yes' if private else 'No'}
-- **CLAIMM Group:** {'Yes' if add_to_claimm else 'No'}
+- **Author:** {submission.author or "Not specified"}
+- **Tags:** {", ".join(submission.tags) if submission.tags else "None"}
+- **Private:** {"Yes" if private else "No"}
+- **CLAIMM Group:** {"Yes" if add_to_claimm else "No"}
 
 **Next Steps:**
 Use `upload_file` with dataset_id=`{submission.id}` to add files to this dataset.
@@ -584,8 +581,8 @@ async def update_dataset(
 - **Title:** {submission.title}
 - **Name:** `{submission.name}`
 - **ID:** `{submission.id}`
-- **Author:** {submission.author or 'Not specified'}
-- **Tags:** {', '.join(submission.tags) if submission.tags else 'None'}
+- **Author:** {submission.author or "Not specified"}
+- **Tags:** {", ".join(submission.tags) if submission.tags else "None"}
 - **Resources:** {len(submission.resources)} files
 """
 
@@ -627,7 +624,7 @@ async def upload_file(
 
 - **Name:** {resource.name}
 - **Resource ID:** `{resource.id}`
-- **Format:** {resource.format or 'Unknown'}
+- **Format:** {resource.format or "Unknown"}
 - **Size:** {resource.size:,} bytes if resource.size else 'Unknown'
 - **Dataset ID:** `{resource.package_id}`
 
@@ -673,7 +670,7 @@ async def update_file(
 
 - **Name:** {resource.name}
 - **Resource ID:** `{resource.id}`
-- **Format:** {resource.format or 'Unknown'}
+- **Format:** {resource.format or "Unknown"}
 - **Size:** {resource.size:,} bytes if resource.size else 'Unknown'
 
 **Download URL:**
