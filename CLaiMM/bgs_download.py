@@ -101,7 +101,7 @@ def fetch_commodity_data(
                 response = client.get(url, headers={"Accept": "application/json"})
                 response.raise_for_status()
                 data = response.json()
-        except Exception as e:
+        except (httpx.HTTPStatusError, httpx.ConnectError, ConnectionError) as e:
             print(f"    Error fetching {commodity} ({stat_type}): {e}")
             break
 

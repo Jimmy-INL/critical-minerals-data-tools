@@ -273,7 +273,7 @@ def main():
         print(
             f"Ollama is running with models: {[m['name'] for m in response.json().get('models', [])]}"
         )
-    except Exception as e:
+    except (httpx.HTTPStatusError, httpx.ConnectError, ConnectionError) as e:
         print(f"Error: Ollama not running. Start with: ollama serve")
         return
 
@@ -282,7 +282,7 @@ def main():
         response = httpx.get(f"{BGS_API_URL}/", timeout=5.0)
         response.raise_for_status()
         print("BGS API is running")
-    except Exception as e:
+    except (httpx.HTTPStatusError, httpx.ConnectError, ConnectionError) as e:
         print(f"Error: BGS API not running. Start with: uv run bgs-api")
         return
 
@@ -299,7 +299,7 @@ def main():
     try:
         for query in queries[:1]:  # Just one query for tool calling test
             chat_with_ollama(query)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"\nTool calling failed: {e}")
         print("Falling back to simple query approach...")
 
@@ -310,7 +310,7 @@ def main():
     for query in queries:
         try:
             simple_query(query)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Error: {e}")
 
 

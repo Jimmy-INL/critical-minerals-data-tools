@@ -171,7 +171,7 @@ def main():
     for query in queries:
         try:
             chat_with_tools(query)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Error: {e}")
         print("\n")
 

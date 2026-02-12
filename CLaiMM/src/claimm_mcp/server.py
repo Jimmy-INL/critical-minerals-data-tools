@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import httpx
 from mcp.server.fastmcp import FastMCP
 
 try:
@@ -60,7 +61,7 @@ async def detect_file_schema(
         try:
             resource = await edx.get_resource(resource_id)
             format = resource.format
-        except Exception:
+        except (httpx.HTTPError, OSError, KeyError):
             format = "CSV"  # Default to CSV
 
     result = await detector.detect_headers(resource_id, format)
@@ -420,7 +421,7 @@ async def ask_about_data(
         if resource.package_id:
             try:
                 submission = await edx.get_submission(resource.package_id)
-            except Exception:
+            except (httpx.HTTPError, OSError, KeyError):
                 pass
         return await llm.answer_about_resource(resource, submission, question)
 
@@ -697,7 +698,7 @@ async def delete_file(resource_id: str) -> str:
     try:
         resource = await edx.get_resource(resource_id)
         resource_name = resource.name
-    except Exception:
+    except (httpx.HTTPError, OSError, KeyError):
         resource_name = resource_id
 
     await edx.delete_resource(resource_id)
@@ -729,7 +730,7 @@ async def delete_dataset(dataset_id: str) -> str:
         submission = await edx.get_submission(dataset_id)
         dataset_title = submission.title or submission.name
         resource_count = len(submission.resources)
-    except Exception:
+    except (httpx.HTTPError, OSError, KeyError):
         dataset_title = dataset_id
         resource_count = 0
 

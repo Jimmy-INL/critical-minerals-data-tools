@@ -84,7 +84,7 @@ class ComtradeClient:
                 "api_key_configured": self.is_available(),
                 "message": "Request timed out",
             }
-        except Exception as e:
+        except (httpx.HTTPError, OSError) as e:
             return {
                 "status": "error",
                 "api_key_configured": self.is_available(),
@@ -130,7 +130,7 @@ class ComtradeClient:
             try:
                 record = TradeRecord.model_validate(item)
                 records.append(record)
-            except Exception:
+            except (ValueError, KeyError):
                 # Skip malformed records
                 continue
 

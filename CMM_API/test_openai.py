@@ -131,7 +131,7 @@ def main():
         try:
             answer = ask_cmm(q)
             print(f"\n{answer}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Error: {e}")
         print()
 

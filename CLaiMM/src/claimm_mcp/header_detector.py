@@ -77,7 +77,7 @@ class HeaderDetector:
                         "resource_id": resource_id,
                     }
 
-            except Exception as e:
+            except (httpx.HTTPStatusError, httpx.ConnectError, OSError) as e:
                 return {
                     "success": False,
                     "error": str(e),
@@ -113,7 +113,7 @@ class HeaderDetector:
         try:
             reader = csv.reader(io.StringIO(content), delimiter=delimiter)
             rows = list(reader)
-        except Exception as e:
+        except (ValueError, csv.Error) as e:
             return {
                 "success": False,
                 "error": f"CSV parse error: {e}",
@@ -262,7 +262,7 @@ class HeaderDetector:
                         "resource_id": resource_id,
                     }
 
-            except Exception as e:
+            except (httpx.HTTPStatusError, httpx.ConnectError, OSError) as e:
                 return {
                     "success": False,
                     "error": str(e),
@@ -305,7 +305,7 @@ class HeaderDetector:
                 "sheet_names": list(sheets.keys()),
             }
 
-        except Exception as e:
+        except (OSError, ValueError, KeyError) as e:
             return {
                 "success": False,
                 "error": f"Excel parse error (may need full file): {e}",

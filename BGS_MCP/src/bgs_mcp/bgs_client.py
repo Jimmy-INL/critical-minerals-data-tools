@@ -142,7 +142,7 @@ class BGSClient:
                     commodity = feature.get("properties", {}).get("bgs_commodity_trans")
                     if commodity:
                         commodities.add(commodity)
-            except Exception:
+            except (httpx.HTTPError, ValueError, KeyError):
                 break
 
         return sorted(commodities)

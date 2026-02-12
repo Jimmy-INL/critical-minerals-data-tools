@@ -313,7 +313,7 @@ class CLAIMMClient:
                 tags=[t.get("name", "") for t in result.get("tags", [])],
                 resources=resources,
             )
-        except Exception:
+        except (httpx.HTTPError, OSError, KeyError):
             return None
 
     async def get_categories(self) -> dict[str, int]:
@@ -376,7 +376,7 @@ class UnifiedClient:
                     "count": len(claimm_results),
                     "datasets": [ds.model_dump() for ds in claimm_results],
                 }
-            except Exception as e:
+            except (httpx.HTTPError, OSError, KeyError) as e:
                 results["sources"]["CLAIMM"] = {"error": str(e)}
 
         if "BGS" in sources:
@@ -412,7 +412,7 @@ class UnifiedClient:
                     results["sources"]["BGS"] = {
                         "message": "Specify a mineral (lithium, cobalt, nickel, etc.) for BGS data"
                     }
-            except Exception as e:
+            except (httpx.HTTPError, OSError, KeyError) as e:
                 results["sources"]["BGS"] = {"error": str(e)}
 
         return results
@@ -440,7 +440,7 @@ class UnifiedClient:
         # Get CLAIMM categories
         try:
             overview["sources"]["CLAIMM"]["categories"] = await self.claimm.get_categories()
-        except Exception:
+        except (httpx.HTTPError, OSError, KeyError):
             pass
 
         # Get BGS commodities

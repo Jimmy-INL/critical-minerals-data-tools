@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+import httpx
 from mcp.server.fastmcp import FastMCP
 
 from .client import ComtradeClient
@@ -326,7 +327,7 @@ async def get_commodity_trade_summary(
                     country_totals[country] = country_totals.get(country, 0) + r.trade_value
                     if commodity_name is None:
                         commodity_name = r.commodity
-        except Exception:
+        except (httpx.HTTPError, OSError, ValueError) as e:
             continue
 
     if not country_totals:
@@ -403,7 +404,7 @@ async def get_country_trade_profile(
                     profile["imports"][mineral_name] = import_total
                 if export_total > 0:
                     profile["exports"][mineral_name] = export_total
-            except Exception:
+            except (httpx.HTTPError, OSError, ValueError):
                 continue
 
     profile["total_imports"] = sum(profile["imports"].values())
