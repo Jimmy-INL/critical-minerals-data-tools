@@ -92,3 +92,6 @@ settings.local.json
 
 # Local MCP config with secrets
 *.mcp.json
+
+# Local caches
+USGS_MCP/.cache/
