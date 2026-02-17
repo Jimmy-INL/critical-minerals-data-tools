@@ -11,6 +11,9 @@ dependencies = [
     "pydantic>=2.0.0",
 ]
 
+[tool.uv.sources]
+cmm-data = { path = "../../cmm-data" }
+
 [project.scripts]
 osti-mcp = "osti_mcp.server:main"
 

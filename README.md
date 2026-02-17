@@ -8,6 +8,7 @@ A suite of MCP servers and supporting APIs for accessing critical minerals and m
 |--------|-------------|----------|------------|
 | **CLAIMM (NETL EDX)** | US Critical Minerals and Materials | 200+ datasets | Research data, CSV, schemas |
 | **BGS World Mineral Statistics** | Global mineral production & trade | 1970-2023, 70+ minerals | Production, imports, exports |
+| **USGS Mineral Commodity Summaries** | Global mineral production & market stats | Annual releases | Production, reserves, trade, prices |
 
 ## Projects Overview
 
@@ -15,6 +16,7 @@ A suite of MCP servers and supporting APIs for accessing critical minerals and m
 Data_Needs/
 ├── CLaiMM/          # CLAIMM MCP servers (standard + agnostic)
 ├── BGS_MCP/         # BGS MCP server + REST API
+├── USGS_MCP/        # USGS MCS MCP server + REST API
 ├── UNComtrade_MCP/  # UN Comtrade MCP server
 ├── GoogleScholar_MCP/ # Google Scholar MCP server
 ├── ArXiv_MCP/       # ArXiv MCP server
@@ -29,6 +31,7 @@ Data_Needs/
 | **CLaiMM** (standard) | MCP | CLAIMM | Yes | AI-powered search with summarization |
 | **CLaiMM** (agnostic) | MCP | CLAIMM | No | Direct CLAIMM data access |
 | **BGS_MCP** | MCP + REST | BGS | No | Global production statistics |
+| **USGS_MCP** | MCP + REST | USGS MCS | No | Annual USGS mineral summaries |
 | **UNComtrade_MCP** | MCP | UN Comtrade | No | International trade flows by HS code |
 | **GoogleScholar_MCP** | MCP | Google Scholar (SerpAPI) | No | Academic literature search |
 | **ArXiv_MCP** | MCP | arXiv + optional LLM summaries | Optional | Preprint search and summarization |
@@ -75,6 +78,7 @@ cd Data_Needs
 # Install each project
 cd CLaiMM && uv sync && cd ..
 cd BGS_MCP && uv sync && cd ..
+cd USGS_MCP && uv sync && cd ..
 cd UNComtrade_MCP && uv sync && cd ..
 cd GoogleScholar_MCP && uv sync && cd ..
 cd ArXiv_MCP && uv sync && cd ..

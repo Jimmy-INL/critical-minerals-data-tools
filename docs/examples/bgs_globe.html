@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BGS Critical Minerals — Globe Fly-In</title>
+    <style>
+      :root {
+        --bg: #070b12;
+        --panel: rgba(9, 15, 25, 0.85);
+        --accent: #2df2ff;
+        --accent-2: #ff7a59;
+        --text: #e6f1ff;
+        --muted: #9bb0c8;
+        --good: #42f59e;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Space Grotesk", system-ui, -apple-system, Segoe UI, sans-serif;
+        overflow: hidden;
+      }
+      #globe {
+        position: absolute;
+        inset: 0;
+      }
+      .hud {
+        position: absolute;
+        top: 24px;
+        left: 24px;
+        right: 24px;
+        display: grid;
+        grid-template-columns: 1fr minmax(260px, 360px);
+        gap: 16px;
+        pointer-events: none;
+      }
+      .title-card {
+        background: linear-gradient(135deg, rgba(14, 26, 45, 0.45), rgba(7, 12, 20, 0.22));
+        border: 1px solid rgba(45, 242, 255, 0.2);
+        border-radius: 16px;
+        padding: 18px 20px;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        pointer-events: auto;
+      }
+      .title {
+        font-size: 20px;
+        letter-spacing: 0.02em;
+        margin: 0 0 6px 0;
+      }
+      .subtitle {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 0;
+      }
+      .panel {
+        background: rgba(9, 15, 25, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 14px 16px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        pointer-events: auto;
+      }
+      .panel h3 {
+        margin: 4px 0 10px 0;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .metric {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 14px;
+        margin: 6px 0;
+      }
+      .metric .value {
+        font-size: 18px;
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .rank-list {
+        display: grid;
+        gap: 10px;
+      }
+      .rank-row {
+        display: grid;
+        grid-template-columns: 28px 1fr 64px;
+        gap: 10px;
+        align-items: center;
+        font-size: 13px;
+      }
+      .rank-row .rank {
+        width: 28px;
+        height: 28px;
+        border-radius: 10px;
+        background: rgba(45, 242, 255, 0.15);
+        border: 1px solid rgba(45, 242, 255, 0.35);
+        display: grid;
+        place-items: center;
+        font-weight: 600;
+      }
+      .bar {
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+      }
+      .bar > span {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        transition: width 1.6s ease;
+      }
+      .legend {
+        position: absolute;
+        bottom: 20px;
+        left: 24px;
+        font-size: 12px;
+        color: var(--muted);
+        pointer-events: none;
+      }
+      .pulse {
+        position: absolute;
+        inset: auto 20px 20px auto;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--good);
+        box-shadow: 0 0 16px var(--good);
+        animation: pulse 1.6s infinite;
+      }
+      @keyframes pulse {
+        0% { transform: scale(0.8); opacity: 0.8; }
+        70% { transform: scale(1.6); opacity: 0; }
+        100% { transform: scale(0.8); opacity: 0; }
+      }
+      .loading {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        font-size: 14px;
+        color: var(--muted);
+        background: radial-gradient(circle at 20% 20%, rgba(45, 242, 255, 0.08), transparent 45%),
+                    radial-gradient(circle at 80% 10%, rgba(255, 122, 89, 0.08), transparent 45%);
+        z-index: 10;
+      }
+      .hidden { display: none; }
+    </style>
+    <link rel="preconnect" href="https://unpkg.com" />
+  </head>
+  <body>
+    <div id="globe"></div>
+
+    <div class="loading" id="loading">Loading globe + data…</div>
+
+    <div class="hud">
+      <div class="title-card">
+        <h1 class="title">Critical Minerals — Global Production</h1>
+        <p class="subtitle" id="subtitle">Waiting for data…</p>
+        <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center; font-size: 12px;">
+          <span style="color: var(--muted);">Source:</span>
+          <select id="sourceSelect" style="background: rgba(0,0,0,0.4); color: var(--text); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 4px 8px;">
+            <option value="bgs">BGS</option>
+            <option value="usgs">USGS MCS</option>
+          </select>
+          <span style="color: var(--muted);">Mines:</span>
+          <label style="display: flex; gap: 6px; align-items: center;">
+            <input id="minesToggle" type="checkbox" checked />
+            <span style="color: var(--muted);">MRDS+OSM</span>
+          </label>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Top 5 Producers</h3>
+        <div class="metric">
+          <span>Top Producer</span>
+          <span class="value" id="topCountry">—</span>
+        </div>
+        <div class="metric">
+          <span>Global Total</span>
+          <span class="value" id="globalTotal">—</span>
+        </div>
+        <div class="rank-list" id="rankList"></div>
+      </div>
+      <div class="panel">
+        <h3>Country Snapshot</h3>
+        <div class="metric">
+          <span>Selected</span>
+          <span class="value" id="selectedCountry">—</span>
+        </div>
+        <div class="metric">
+          <span>Production (this commodity)</span>
+          <span class="value" id="selectedValue">—</span>
+        </div>
+        <div class="metric">
+          <span>Other Commodities</span>
+          <span style="color: var(--muted); font-size: 12px;">Top 8 shown</span>
+        </div>
+        <div class="rank-list" id="countryCommodities"></div>
+        <div id="minesStatus" style="margin-top: 8px; font-size: 12px; color: var(--muted);">Mines: ready</div>
+      </div>
+    </div>
+
+    <div class="legend">
+      Camera flies from orbit to the top producer. Pulses indicate top 5 producers.
+    </div>
+
+    <div class="pulse" title="Live data"></div>
+
+    <script src="https://unpkg.com/globe.gl"></script>
+    <script>
+      const API_BASES = {
+        bgs: "http://localhost:8000",
+        usgs: "http://localhost:8011",
+      };
+      const MINES_API_BASE = "http://localhost:8011";
+      const params = new URLSearchParams(window.location.search);
+      const source = params.get("source") || "bgs";
+      const commodityParam = params.get("commodity");
+      const commodity = commodityParam || (source === "usgs" ? "copper" : "cobalt, mine");
+
+      const coordCache = new Map();
+
+      async function fetchLatLng(iso3, name) {
+        const key = iso3 || name;
+        if (coordCache.has(key)) return coordCache.get(key);
+
+        let url = null;
+        if (iso3) {
+          url = `https://restcountries.com/v3.1/alpha/${encodeURIComponent(iso3)}`;
+        } else if (name) {
+          url = `https://restcountries.com/v3.1/name/${encodeURIComponent(name)}?fullText=true`;
+        }
+
+        if (!url) return null;
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const data = await res.json();
+        const entry = Array.isArray(data) ? data[0] : data;
+        const latlng = entry?.latlng;
+        if (!latlng || latlng.length < 2) return null;
+        const coord = { lat: latlng[0], lng: latlng[1] };
+        coordCache.set(key, coord);
+        return coord;
+      }
+
+      function setRankList(rankings, onSelect) {
+        const container = document.getElementById("rankList");
+        container.innerHTML = "";
+        const maxShare = Math.max(...rankings.map((r) => r.share_percent || 0));
+        rankings.forEach((row) => {
+          const div = document.createElement("div");
+          div.className = "rank-row";
+          div.innerHTML = `
+            <div class="rank">${row.rank}</div>
+            <div>
+              <div>${row.country}</div>
+              <div class="bar"><span style="width:${(row.share_percent / maxShare) * 100}%"></span></div>
+            </div>
+            <div style="text-align:right; color: var(--muted);">${row.share_percent.toFixed(1)}%</div>
+          `;
+          div.style.cursor = "pointer";
+          div.addEventListener("click", () => onSelect(row));
+          container.appendChild(div);
+        });
+        setTimeout(() => {
+          container.querySelectorAll(".bar > span").forEach((span) => {
+            span.style.width = span.style.width;
+          });
+        }, 50);
+      }
+
+      function setCountrySnapshot(row, profile, onCommoditySelect) {
+        document.getElementById("selectedCountry").textContent = row.country;
+        document.getElementById("selectedValue").textContent = `${row.quantity.toLocaleString()} (${row.share_percent.toFixed(1)}%)`;
+
+        const container = document.getElementById("countryCommodities");
+        container.innerHTML = "";
+        if (!profile?.commodities?.length) {
+          container.innerHTML = '<div style="color: var(--muted); font-size: 12px;">No profile data.</div>';
+          return;
+        }
+
+        const items = profile.commodities.slice(0, 8);
+        items.forEach((item, idx) => {
+          const div = document.createElement("div");
+          div.className = "rank-row";
+          div.innerHTML = `
+            <div class="rank">${idx + 1}</div>
+            <div>${item.commodity}</div>
+            <div style="text-align:right; color: var(--muted);">${(item.quantity ?? 0).toLocaleString()} ${item.units || ""}</div>
+          `;
+          div.style.cursor = "pointer";
+          div.addEventListener("click", () => onCommoditySelect(item));
+          container.appendChild(div);
+        });
+      }
+
+      async function fetchRanking() {
+        const base = API_BASES[source] || API_BASES.bgs;
+        const res = await fetch(
+          `${base}/production/ranking?commodity=${encodeURIComponent(commodity)}&top_n=5`
+        );
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`API ${res.status}: ${text}`);
+        }
+        return res.json();
+      }
+
+      async function fetchCountryProfileForSource(country, iso3) {
+        const base = API_BASES[source] || API_BASES.bgs;
+        const path =
+          source === "usgs" ? `/countries/${encodeURIComponent(country)}/profile` : `/countries/${iso3}/profile`;
+        const res = await fetch(`${base}${path}`);
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Profile ${res.status}: ${text}`);
+        }
+        return res.json();
+      }
+
+      async function fetchMines(country, commodityName) {
+        const minesToggle = document.getElementById("minesToggle");
+        if (!minesToggle.checked) return [];
+        if (!country) return [];
+        const res = await fetch(
+          `${MINES_API_BASE}/mines/search?country=${encodeURIComponent(country)}&commodity=${encodeURIComponent(
+            commodityName || ""
+          )}&source=both&limit=200`
+        );
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Mines ${res.status}: ${text}`);
+        }
+        return res.json();
+      }
+
+      async function main() {
+        const ranking = await fetchRanking();
+
+        const title = `Commodity: ${ranking.commodity} • ${ranking.year} • ${source.toUpperCase()}`;
+        document.getElementById("subtitle").textContent = title;
+        document.getElementById("topCountry").textContent = ranking.rankings[0]?.country || "—";
+        document.getElementById("globalTotal").textContent = `${ranking.total_quantity.toLocaleString()} ${ranking.units}`;
+        let globe = null;
+        let minePoints = [];
+        let activeCommodity = commodity;
+        let activeCountry = null;
+        const producers = [];
+
+        const isValidCoord = (p) => Number.isFinite(p.lat) && Number.isFinite(p.lng) && (p.lat !== 0 || p.lng !== 0);
+
+        const handleSelect = async (row) => {
+          activeCountry = row.country;
+          const point = points.find((p) => p.country === row.country);
+          if (globe && point && isValidCoord(point)) {
+            globe.controls().autoRotate = false;
+            globe.pointOfView({ lat: point.lat, lng: point.lng, altitude: 0.7 }, 2200);
+          }
+          try {
+            const profile = await fetchCountryProfileForSource(row.country, row.country_iso3);
+            setCountrySnapshot(row, profile, async (item) => {
+              activeCommodity = item.commodity;
+              const point = points.find((p) => p.country === row.country);
+              if (globe && point && isValidCoord(point)) {
+                globe.pointOfView({ lat: point.lat, lng: point.lng, altitude: 0.45 }, 1800);
+              }
+              await updateMines(row.country);
+            });
+          } catch (err) {
+            console.warn(err);
+            setCountrySnapshot(row, null, () => {});
+          }
+
+          await updateMines(row.country);
+        };
+
+        setRankList(ranking.rankings, handleSelect);
+
+        const points = await Promise.all(
+          ranking.rankings.map(async (row) => {
+            const coord =
+              (await fetchLatLng(row.country_iso3, row.country)) ||
+              (await fetchLatLng(null, row.country));
+            return {
+              lat: coord?.lat ?? 0,
+              lng: coord?.lng ?? 0,
+              size: row.rank === 1 ? 1.2 : 0.8,
+              color: row.rank === 1 ? "#2df2ff" : "#ff7a59",
+              country: row.country,
+              share: row.share_percent,
+              iso3: row.country_iso3,
+              type: "producer",
+            };
+          })
+        );
+
+        points.forEach((p) => producers.push(p));
+
+        const updatePoints = () => {
+          const minesToggle = document.getElementById("minesToggle");
+          const data = minesToggle.checked ? producers.concat(minePoints) : producers;
+          globe.pointsData(data);
+        };
+
+        const updateMines = async (countryName) => {
+          const minesStatus = document.getElementById("minesStatus");
+          if (!document.getElementById("minesToggle").checked) {
+            minePoints = [];
+            updatePoints();
+            minesStatus.textContent = "Mines: off";
+            return;
+          }
+          minesStatus.textContent = `Mines: loading (${activeCommodity})…`;
+          try {
+            const mines = await fetchMines(countryName, activeCommodity);
+            const matchKey = (activeCommodity || "").toLowerCase();
+            minePoints = (mines || []).map((m) => ({
+              lat: m.lat,
+              lng: m.lng,
+              size: 0.25,
+              color:
+                m.commodities && m.commodities.join(" ").toLowerCase().includes(matchKey)
+                  ? "#ff3d9a"
+                  : m.source === "osm"
+                    ? "#ffd166"
+                    : "#7cffcb",
+              country: countryName,
+              label: m.name,
+              type: "mine",
+              source: m.source,
+              commodities: m.commodities || [],
+            }));
+            updatePoints();
+            minesStatus.textContent = `Mines: ${minePoints.length} shown (${activeCommodity})`;
+
+            if (minePoints.length) {
+              const focusMine = minePoints[0];
+              if (isValidCoord(focusMine)) {
+                globe.pointOfView({ lat: focusMine.lat, lng: focusMine.lng, altitude: 0.35 }, 1800);
+              }
+            }
+          } catch (err) {
+            console.warn(err);
+            minesStatus.textContent = "Mines: unavailable";
+          }
+        };
+
+        globe = Globe()(document.getElementById("globe"))
+          .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
+          .backgroundImageUrl("https://unpkg.com/three-globe/example/img/night-sky.png")
+          .pointOfView({ lat: 0, lng: 0, altitude: 2.4 })
+          .pointsData(points)
+          .pointLat((d) => d.lat)
+          .pointLng((d) => d.lng)
+          .pointColor((d) => d.color)
+          .pointRadius((d) => d.size)
+          .pointLabel((d) =>
+            d.type === "mine" ? `<b>${d.label}</b><br/>Source: ${d.source}` : `<b>${d.country}</b>`
+          )
+          .onPointClick((d) => {
+            if (!d) return;
+            const alt = d.type === "mine" ? 0.28 : 0.7;
+            globe.pointOfView({ lat: d.lat, lng: d.lng, altitude: alt }, 1600);
+          })
+          .pointsMerge(true)
+          .ringsData(points)
+          .ringLat((d) => d.lat)
+          .ringLng((d) => d.lng)
+          .ringColor((d) => (t) => `rgba(45, 242, 255, ${1 - t})`)
+          .ringMaxRadius(2.8)
+          .ringPropagationSpeed(1.4)
+          .ringRepeatPeriod(1200);
+
+        globe.controls().autoRotate = true;
+        globe.controls().autoRotateSpeed = 0.4;
+
+        const focus = points[0];
+        if (focus) {
+          setTimeout(() => {
+            globe.controls().autoRotate = false;
+            globe.pointOfView({ lat: focus.lat, lng: focus.lng, altitude: 0.7 }, 4200);
+          }, 1600);
+          handleSelect(ranking.rankings[0]);
+        }
+
+        document.getElementById("sourceSelect").value = source;
+        document.getElementById("sourceSelect").addEventListener("change", (e) => {
+          const next = e.target.value;
+          const nextUrl = new URL(window.location.href);
+          nextUrl.searchParams.set("source", next);
+          window.location.href = nextUrl.toString();
+        });
+
+        document.getElementById("minesToggle").addEventListener("change", () => {
+          updatePoints();
+          if (activeCountry && document.getElementById("minesToggle").checked) {
+            updateMines(activeCountry);
+          }
+        });
+
+        document.getElementById("loading").classList.add("hidden");
+      }
+
+      main().catch((err) => {
+        console.error(err);
+        const loading = document.getElementById("loading");
+        const base = API_BASES[source] || API_BASES.bgs;
+        loading.textContent =
+          `Failed to load data. Is the API running at ${base}? ` +
+          "Open DevTools → Console for details. Try setting ?commodity=copper for USGS.";
+      });
+    </script>
+  </body>
+</html>

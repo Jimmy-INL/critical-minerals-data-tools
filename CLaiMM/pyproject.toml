@@ -14,6 +14,9 @@ dependencies = [
     "pydantic-settings>=2.0.0",
 ]
 
+[tool.uv.sources]
+cmm-data = { path = "../../cmm-data" }
+
 [project.scripts]
 claimm-mcp = "claimm_mcp.server:main"
 claimm-mcp-agnostic = "claimm_mcp.server_agnostic:main"

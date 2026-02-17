@@ -16,6 +16,9 @@ dependencies = [
     "mcp[cli]>=1.0.0",
 ]
 
+[tool.uv.sources]
+cmm-data = { path = "../../cmm-data" }
+
 [project.scripts]
 cmm-api = "cmm_api.server:main"
 cmm-mcp = "cmm_api.mcp_server:main"
