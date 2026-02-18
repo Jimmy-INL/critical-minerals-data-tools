@@ -167,16 +167,25 @@
       <div class="title-card">
         <h1 class="title">Critical Minerals — Global Production</h1>
         <p class="subtitle" id="subtitle">Waiting for data…</p>
-        <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center; font-size: 12px;">
+        <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center; font-size: 12px; flex-wrap: wrap;">
           <span style="color: var(--muted);">Source:</span>
           <select id="sourceSelect" style="background: rgba(0,0,0,0.4); color: var(--text); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 4px 8px;">
             <option value="bgs">BGS</option>
             <option value="usgs">USGS MCS</option>
           </select>
+          <span style="color: var(--muted);">Commodity:</span>
+          <select id="commoditySelect" style="background: rgba(0,0,0,0.4); color: var(--text); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 4px 8px; min-width: 180px;">
+            <option value="">Loading…</option>
+          </select>
           <span style="color: var(--muted);">Mines:</span>
           <label style="display: flex; gap: 6px; align-items: center;">
             <input id="minesToggle" type="checkbox" checked />
             <span style="color: var(--muted);">MRDS+OSM</span>
+          </label>
+          <span style="color: var(--muted);">Aggregates:</span>
+          <label style="display: flex; gap: 6px; align-items: center;">
+            <input id="aggregatesToggle" type="checkbox" />
+            <span style="color: var(--muted);">Show World/Other</span>
           </label>
         </div>
       </div>
@@ -209,6 +218,14 @@
         <div class="rank-list" id="countryCommodities"></div>
         <div id="minesStatus" style="margin-top: 8px; font-size: 12px; color: var(--muted);">Mines: ready</div>
       </div>
+      <div class="panel">
+        <h3>Ask The Data</h3>
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <input id="qaInput" type="text" placeholder="Ask about the data on screen…" style="flex:1; background: rgba(0,0,0,0.35); color: var(--text); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 8px 10px;"/>
+          <button id="qaBtn" style="background: var(--accent); border: none; color: #02121a; border-radius: 8px; padding: 8px 12px; font-weight: 600; cursor: pointer;">Ask</button>
+        </div>
+        <div id="qaAnswer" style="font-size: 12px; color: var(--muted); min-height: 48px; line-height: 1.4;">No question yet.</div>
+      </div>
     </div>
 
     <div class="legend">
@@ -227,7 +244,9 @@
       const params = new URLSearchParams(window.location.search);
       const source = params.get("source") || "bgs";
       const commodityParam = params.get("commodity");
-      const commodity = commodityParam || (source === "usgs" ? "copper" : "cobalt, mine");
+      let currentCommodity = commodityParam || (source === "usgs" ? "copper" : "cobalt, mine");
+      const sourceSelect = document.getElementById("sourceSelect");
+      sourceSelect.value = source;
 
       const coordCache = new Map();
 
@@ -306,16 +325,69 @@
         });
       }
 
+      const isAggregate = (name) => {
+        if (!name) return false;
+        const n = name.toLowerCase();
+        return n.includes("world total") || n.includes("other countries");
+      };
+
+      async function loadCommodities(base) {
+        const select = document.getElementById("commoditySelect");
+        select.innerHTML = "<option>Loading…</option>";
+        let list = [];
+        try {
+          if (source === "bgs") {
+            const res = await fetch(`${base}/commodities?critical_only=true`);
+            const data = await res.json();
+            list = data.commodities || [];
+          } else {
+            const res = await fetch(`${base}/commodities`);
+            const data = await res.json();
+            list = data.commodities || [];
+          }
+        } catch (err) {
+          console.warn(err);
+        }
+        if (!list.length) {
+          select.innerHTML = "<option>Unavailable</option>";
+          return;
+        }
+        // Filter out items that likely won't have production rankings
+        const excluded = ["Abrasives (Manufactured)", "World total", "Other countries"];
+        list = list.filter((c) => !excluded.includes(c));
+        select.innerHTML = "";
+        list.forEach((c) => {
+          const opt = document.createElement("option");
+          opt.value = c;
+          opt.textContent = c;
+          if (c.toLowerCase() === (currentCommodity || "").toLowerCase()) {
+            opt.selected = true;
+          }
+          select.appendChild(opt);
+        });
+        const selectedValues = list.map((c) => c.toLowerCase());
+        if (!selectedValues.includes((currentCommodity || "").toLowerCase())) {
+          currentCommodity = list[0];
+          const nextUrl = new URL(window.location.href);
+          nextUrl.searchParams.set("commodity", currentCommodity);
+          window.location.href = nextUrl.toString();
+        }
+      }
+
       async function fetchRanking() {
         const base = API_BASES[source] || API_BASES.bgs;
         const res = await fetch(
-          `${base}/production/ranking?commodity=${encodeURIComponent(commodity)}&top_n=5`
+          `${base}/production/ranking?commodity=${encodeURIComponent(currentCommodity)}&top_n=5`
         );
         if (!res.ok) {
           const text = await res.text();
           throw new Error(`API ${res.status}: ${text}`);
         }
-        return res.json();
+        const data = await res.json();
+        if (!data.rankings || !data.rankings.length) {
+          throw new Error("No rankings returned for this commodity.");
+        }
+        return data;
       }
 
       async function fetchCountryProfileForSource(country, iso3) {
@@ -347,7 +419,24 @@
       }
 
       async function main() {
-        const ranking = await fetchRanking();
+        const base = API_BASES[source] || API_BASES.bgs;
+        await loadCommodities(base);
+        let ranking;
+        try {
+          ranking = await fetchRanking();
+        } catch (err) {
+          console.warn(err);
+          // Fallback to first available commodity
+          const select = document.getElementById("commoditySelect");
+          const fallback = select?.options?.[0]?.value;
+          if (fallback && fallback !== currentCommodity) {
+            const nextUrl = new URL(window.location.href);
+            nextUrl.searchParams.set("commodity", fallback);
+            window.location.href = nextUrl.toString();
+            return;
+          }
+          throw err;
+        }
 
         const title = `Commodity: ${ranking.commodity} • ${ranking.year} • ${source.toUpperCase()}`;
         document.getElementById("subtitle").textContent = title;
@@ -355,9 +444,10 @@
         document.getElementById("globalTotal").textContent = `${ranking.total_quantity.toLocaleString()} ${ranking.units}`;
         let globe = null;
         let minePoints = [];
-        let activeCommodity = commodity;
+        let activeCommodity = currentCommodity;
         let activeCountry = null;
         const producers = [];
+        let currentProfile = null;
 
         const isValidCoord = (p) => Number.isFinite(p.lat) && Number.isFinite(p.lng) && (p.lat !== 0 || p.lng !== 0);
 
@@ -370,6 +460,7 @@
           }
           try {
             const profile = await fetchCountryProfileForSource(row.country, row.country_iso3);
+            currentProfile = profile;
             setCountrySnapshot(row, profile, async (item) => {
               activeCommodity = item.commodity;
               const point = points.find((p) => p.country === row.country);
@@ -386,10 +477,26 @@
           await updateMines(row.country);
         };
 
-        setRankList(ranking.rankings, handleSelect);
+        const applyRanking = (allRankings) => {
+          const showAgg = document.getElementById("aggregatesToggle").checked;
+          const filtered = showAgg ? allRankings : allRankings.filter((r) => !isAggregate(r.country));
+          setRankList(filtered, handleSelect);
+          document.getElementById("topCountry").textContent = filtered[0]?.country || "—";
+          if (!showAgg) {
+            const nonAgg = allRankings.filter((r) => !isAggregate(r.country));
+            document.getElementById("globalTotal").textContent = `${nonAgg
+              .reduce((acc, r) => acc + (r.quantity || 0), 0)
+              .toLocaleString()} ${ranking.units || ""}`;
+          } else {
+            document.getElementById("globalTotal").textContent = `${ranking.total_quantity.toLocaleString()} ${ranking.units}`;
+          }
+          return filtered;
+        };
+
+        let activeRankings = applyRanking(ranking.rankings);
 
         const points = await Promise.all(
-          ranking.rankings.map(async (row) => {
+          activeRankings.map(async (row) => {
             const coord =
               (await fetchLatLng(row.country_iso3, row.country)) ||
               (await fetchLatLng(null, row.country));
@@ -492,14 +599,26 @@
             globe.controls().autoRotate = false;
             globe.pointOfView({ lat: focus.lat, lng: focus.lng, altitude: 0.7 }, 4200);
           }, 1600);
-          handleSelect(ranking.rankings[0]);
+          handleSelect(activeRankings[0]);
         }
 
-        document.getElementById("sourceSelect").value = source;
-        document.getElementById("sourceSelect").addEventListener("change", (e) => {
+        document.getElementById("sourceSelect").addEventListener("change", async (e) => {
           const next = e.target.value;
           const nextUrl = new URL(window.location.href);
           nextUrl.searchParams.set("source", next);
+          // Load commodity list for new source, then pick first valid commodity.
+          const nextBase = API_BASES[next] || API_BASES.bgs;
+          await loadCommodities(nextBase);
+          const select = document.getElementById("commoditySelect");
+          const fallback = select?.options?.[0]?.value || (next === "usgs" ? "copper" : "cobalt, mine");
+          nextUrl.searchParams.set("commodity", fallback);
+          window.location.href = nextUrl.toString();
+        });
+
+        document.getElementById("commoditySelect").addEventListener("change", (e) => {
+          const next = e.target.value;
+          const nextUrl = new URL(window.location.href);
+          nextUrl.searchParams.set("commodity", next);
           window.location.href = nextUrl.toString();
         });
 
@@ -507,6 +626,66 @@
           updatePoints();
           if (activeCountry && document.getElementById("minesToggle").checked) {
             updateMines(activeCountry);
+          }
+        });
+
+        document.getElementById("aggregatesToggle").addEventListener("change", async () => {
+          activeRankings = applyRanking(ranking.rankings);
+          const newPoints = await Promise.all(
+            activeRankings.map(async (row) => {
+              const coord =
+                (await fetchLatLng(row.country_iso3, row.country)) ||
+                (await fetchLatLng(null, row.country));
+              return {
+                lat: coord?.lat ?? 0,
+                lng: coord?.lng ?? 0,
+                size: row.rank === 1 ? 1.2 : 0.8,
+                color: row.rank === 1 ? "#2df2ff" : "#ff7a59",
+                country: row.country,
+                share: row.share_percent,
+                iso3: row.country_iso3,
+                type: "producer",
+              };
+            })
+          );
+          producers.length = 0;
+          newPoints.forEach((p) => producers.push(p));
+          updatePoints();
+        });
+
+        const qaBtn = document.getElementById("qaBtn");
+        qaBtn.addEventListener("click", async () => {
+          const input = document.getElementById("qaInput");
+          const answerBox = document.getElementById("qaAnswer");
+          const question = input.value.trim();
+          if (!question) return;
+          answerBox.textContent = "Thinking…";
+          const base = API_BASES[source] || API_BASES.bgs;
+          const context = {
+            source,
+            commodity: ranking.commodity,
+            year: ranking.year,
+            rankings: ranking.rankings,
+            selected_country: activeCountry,
+            selected_commodity: activeCommodity,
+            country_profile: currentProfile,
+            mines_count: minePoints.length,
+          };
+          try {
+            const res = await fetch(`${base}/qa`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ question, context }),
+            });
+            if (!res.ok) {
+              const text = await res.text();
+              throw new Error(text);
+            }
+            const data = await res.json();
+            answerBox.textContent = data.answer || "No answer returned.";
+          } catch (err) {
+            console.warn(err);
+            answerBox.textContent = "LLM error. Check API key and base_url.";
           }
         });
 

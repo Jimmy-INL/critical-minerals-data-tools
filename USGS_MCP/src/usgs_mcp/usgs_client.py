@@ -167,7 +167,11 @@ class USGSMCSClient:
 
         out = df
         if commodity:
-            out = out[out[col.commodity].astype(str).str.contains(commodity, case=False, na=False)]
+            out = out[
+                out[col.commodity]
+                .astype(str)
+                .str.contains(commodity, case=False, na=False, regex=False)
+            ]
         if country:
             out = out[out[col.country].astype(str).str.contains(country, case=False, na=False)]
         if statistic_type and col.statistic:
@@ -201,6 +205,10 @@ class USGSMCSClient:
         df[col.year] = _parse_year(df[col.year])
         df = df.dropna(subset=[col.value, col.year])
 
+        # Ensure we only use Production rows for rankings
+        if col.statistic:
+            df = df[df[col.statistic].astype(str).str.contains("Production", case=False, na=False)]
+
         if year is None:
             year_max = df[col.year].max()
             if pd.isna(year_max):
@@ -209,6 +217,13 @@ class USGSMCSClient:
         df = df[df[col.year] == year]
 
         grouped = df.groupby(col.country, as_index=False)[col.value].sum()
+        # Drop aggregate rows if present
+        grouped = grouped[
+            ~grouped[col.country]
+            .astype(str)
+            .str.lower()
+            .isin(["world total", "other countries"])
+        ]
         grouped = grouped.sort_values(col.value, ascending=False)
 
         total = grouped[col.value].sum()

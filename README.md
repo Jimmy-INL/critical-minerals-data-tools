@@ -91,11 +91,25 @@ cd CMM_API && uv sync && cd ..
 ### Start All Services
 
 ```bash
-# Terminal 1: BGS REST API
-cd BGS_MCP && uv run bgs-api
+# Terminal 1: BGS REST API (auto-kills existing process on port 8000)
+./scripts/run_bgs_api.sh
 
 # Optional legacy unified REST API (deprecated)
 cd CMM_API && uv run cmm-api
+```
+
+### Serve Demos
+
+```bash
+# Static demo server (auto-kills existing process on port 8085)
+./scripts/run_docs_server.sh
+```
+
+### One-Command Demo
+
+```bash
+# Starts BGS API, USGS API, and the docs server in one terminal
+./scripts/run_demo.sh
 ```
 
 ### Test the APIs
@@ -333,6 +347,13 @@ curl "http://localhost:8000/commodities?critical_only=true"
 | `ANTHROPIC_API_KEY` | CLaiMM standard | Anthropic API key |
 | `GOOGLE_API_KEY` | CLaiMM standard | Google AI API key |
 | `XAI_API_KEY` | CLaiMM standard | xAI (Grok) API key |
+| `LLM_PROVIDER` | Q/A (BGS/USGS) | `openai` or `anthropic` |
+| `OPENAI_MODEL` | Q/A (OpenAI-compatible) | Model name (e.g., `gpt-oss-120b`) |
+| `OPENAI_BASE_URL` | Q/A (OpenAI-compatible) | Base URL (e.g., `https://api.hpc.inl.gov/llm/v1`) |
+| `OPENAI_API_KEY_OSS` | Q/A (OpenAI-compatible) | Alternate key for `gpt-oss-120b` |
+| `ANTHROPIC_MODEL` | Q/A (Anthropic) | Model name |
+| `ANTHROPIC_BASE_URL` | Q/A (Anthropic) | Base URL |
+| `BGS_API_RELOAD` | BGS REST API | Set to `1` to enable auto-reload |
 
 **Note:** BGS data requires no API keys (open data).
 

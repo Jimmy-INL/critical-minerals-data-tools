@@ -3,13 +3,77 @@
 from __future__ import annotations
 
 from typing import Any
+import os
 
 import uvicorn
+import httpx
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from dotenv import load_dotenv, find_dotenv
 
 from .bgs_client import BGSClient
+
+
+def _get_llm_config() -> dict[str, str]:
+    provider = (os.environ.get("LLM_PROVIDER") or "openai").lower()
+    if provider == "anthropic":
+        return {
+            "provider": "anthropic",
+            "model": os.environ.get("ANTHROPIC_MODEL", "claude-3-5-sonnet-latest"),
+            "base_url": os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com/v1"),
+            "api_key": os.environ.get("ANTHROPIC_API_KEY") or "",
+        }
+    model = os.environ.get("OPENAI_MODEL", "gpt-oss-120b")
+    if model == "gpt-oss-120b":
+        api_key = os.environ.get("OPENAI_API_KEY_OSS") or ""
+    elif model == "gpt-5.2-codex":
+        api_key = os.environ.get("OPENAI_API_KEY") or ""
+    else:
+        api_key = os.environ.get("OPENAI_API_KEY") or ""
+    return {
+        "provider": "openai",
+        "model": model,
+        "base_url": os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+        "api_key": api_key,
+    }
+
+
+def _qa_system_prompt() -> str:
+    return (
+        "You are a data analyst. Answer using only the provided context. "
+        "If the answer is not in the context, say so and suggest what data is missing. "
+        "Format: concise markdown with a short title line and bullet points. "
+        "Do NOT use tables or ASCII art. Prefer numeric values with units. "
+        "Each bullet must be on its own line (newline separated). "
+        "End with a one-sentence Insight line."
+    )
+
+
+async def _call_llm(question: str, context: dict[str, Any] | None) -> tuple[str, str, str]:
+    cfg = _get_llm_config()
+    if not cfg["api_key"]:
+        raise HTTPException(status_code=400, detail="Missing API key for LLM provider")
+
+    payload = {
+        "model": cfg["model"],
+        "messages": [
+            {"role": "system", "content": _qa_system_prompt()},
+            {"role": "user", "content": f"Question: {question}\n\nContext:\n{context or {}}"},
+        ],
+        "temperature": 0.2,
+    }
+
+    headers = {"Authorization": f"Bearer {cfg['api_key']}"}
+    url = cfg["base_url"].rstrip("/") + "/chat/completions"
+    async with httpx.AsyncClient(timeout=60) as client:
+        resp = await client.post(url, json=payload, headers=headers)
+        if resp.status_code >= 400:
+            raise HTTPException(status_code=502, detail=f"LLM error: {resp.text}")
+        data = resp.json()
+
+    answer = data["choices"][0]["message"]["content"]
+    return answer, cfg["model"], cfg["provider"]
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -45,6 +109,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+load_dotenv(find_dotenv(), override=True)
 
 
 # Response models
@@ -117,6 +183,17 @@ class TimeSeriesPoint(BaseModel):
     year: int
     quantity: float
     yoy_change_percent: float | None = None
+
+
+class QARequest(BaseModel):
+    question: str
+    context: dict[str, Any] | None = None
+
+
+class QAResponse(BaseModel):
+    answer: str
+    model: str
+    provider: str
 
 
 class TimeSeriesResponse(BaseModel):
@@ -708,13 +785,23 @@ async def get_openai_functions():
     ]
 
 
+@app.post("/qa", response_model=QAResponse, tags=["LLM"])
+async def ask_question(payload: QARequest):
+    """
+    Ask an LLM question grounded in the provided context.
+    """
+    answer, model, provider = await _call_llm(payload.question, payload.context)
+    return QAResponse(answer=answer, model=model, provider=provider)
+
+
 def main():
     """Run the REST API server."""
+    reload_flag = os.environ.get("BGS_API_RELOAD", "0").lower() in {"1", "true", "yes"}
     uvicorn.run(
         "bgs_mcp.api:app",
         host="0.0.0.0",
         port=8000,
-        reload=True,
+        reload=reload_flag,
     )
 
 

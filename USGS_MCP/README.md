@@ -27,7 +27,7 @@ uv sync
 
 ### REST API
 ```bash
-uv run usgs-api
+../scripts/run_usgs_api.sh
 ```
 
 ### MCP Server
