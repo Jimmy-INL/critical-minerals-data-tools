@@ -69,6 +69,8 @@ class BGSClient:
         "antimony, mine",
         "molybdenum, mine",
         "iron ore",
+        "uranium",
+        "uranium, mine",
     ]
 
     def __init__(self):

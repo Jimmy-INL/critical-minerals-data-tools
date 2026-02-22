@@ -113,6 +113,10 @@ app.add_middleware(
 load_dotenv(find_dotenv(), override=True)
 
 
+def _get_llm_model() -> str:
+    return os.environ.get("OPENAI_MODEL") or os.environ.get("ANTHROPIC_MODEL") or "unknown"
+
+
 # Response models
 class CommodityList(BaseModel):
     """List of available commodities."""
@@ -280,7 +284,11 @@ async def list_commodities(
     if critical_only:
         commodities = client.get_critical_minerals()
     else:
-        commodities = await client.get_commodities()
+        try:
+            commodities = await client.get_commodities()
+        except Exception:
+            # Fallback when BGS upstream is slow or returns malformed data.
+            commodities = client.get_critical_minerals()
 
     categories = None
     if categorize:
@@ -347,6 +355,13 @@ async def list_commodities(
         commodities=commodities,
         categories=categories,
     )
+
+
+@app.get("/config", tags=["Config"])
+def get_config() -> dict[str, Any]:
+    return {
+        "llm_model": _get_llm_model(),
+    }
 
 
 @app.get("/countries", response_model=CountryList, tags=["Countries"])

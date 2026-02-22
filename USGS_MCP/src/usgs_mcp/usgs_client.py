@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -98,6 +99,12 @@ class USGSMCSClient:
         )
 
     def _download_csv(self) -> Path:
+        local_override = os.environ.get("USGS_MCS_LOCAL_CSV")
+        if local_override:
+            path = Path(local_override).expanduser().resolve()
+            if path.exists():
+                return path
+
         cache = _cache_dir()
         cache.mkdir(parents=True, exist_ok=True)
 
@@ -126,9 +133,55 @@ class USGSMCSClient:
             # USGS data releases sometimes use Windows-1252 encoding.
             df = pd.read_csv(csv_path, encoding="cp1252")
         df.columns = [_normalize_col(c) for c in df.columns]
+
+        if "prod_2023" in df.columns or any(c.startswith("prod_") for c in df.columns):
+            df = self._reshape_world_production(df)
+
         self._df = df
         self._col_map = self._infer_columns(df)
         return df
+
+    def _reshape_world_production(self, df: pd.DataFrame) -> pd.DataFrame:
+        # Convert MCS world production wide format into long format.
+        colmap = {
+            "commodity": _find_column(list(df.columns), ["commodity"]),
+            "country": _find_column(list(df.columns), ["country"]),
+            "unit": _find_column(list(df.columns), ["unit"]),
+        }
+        if not colmap["commodity"] or not colmap["country"]:
+            return df
+
+        prod_cols: list[tuple[str, int, str]] = []
+        for col in df.columns:
+            normalized = re.sub(r"_+", "_", col)
+            match = re.match(r"prod(_est)?_?(\d{4})", normalized)
+            if not match:
+                continue
+            est = bool(match.group(1))
+            year = int(match.group(2))
+            statistic = "Production (est)" if est else "Production"
+            prod_cols.append((col, year, statistic))
+
+        if not prod_cols:
+            return df
+
+        records = []
+        for col, year, statistic in prod_cols:
+            subset = df[[colmap["commodity"], colmap["country"], col]].copy()
+            subset["year"] = year
+            subset["value"] = subset[col]
+            subset["statistic"] = statistic
+            subset["unit"] = df[colmap["unit"]] if colmap["unit"] else None
+            subset = subset.rename(
+                columns={
+                    colmap["commodity"]: "commodity",
+                    colmap["country"]: "country",
+                }
+            )
+            records.append(subset[["commodity", "country", "year", "value", "unit", "statistic"]])
+
+        long_df = pd.concat(records, ignore_index=True)
+        return long_df
 
     def _infer_columns(self, df: pd.DataFrame) -> ColumnMap:
         cols = list(df.columns)
@@ -201,6 +254,16 @@ class USGSMCSClient:
         col = self._col_map
         assert col
 
+        if df.empty:
+            return {
+                "commodity": commodity,
+                "year": year,
+                "statistic_type": statistic_type,
+                "units": None,
+                "total_quantity": 0.0,
+                "rankings": [],
+            }
+
         df[col.value] = _parse_value(df[col.value])
         df[col.year] = _parse_year(df[col.year])
         df = df.dropna(subset=[col.value, col.year])
@@ -209,12 +272,38 @@ class USGSMCSClient:
         if col.statistic:
             df = df[df[col.statistic].astype(str).str.contains("Production", case=False, na=False)]
 
+        if df.empty:
+            return {
+                "commodity": commodity,
+                "year": year,
+                "statistic_type": statistic_type,
+                "units": None,
+                "total_quantity": 0.0,
+                "rankings": [],
+            }
+
         if year is None:
             year_max = df[col.year].max()
             if pd.isna(year_max):
-                raise RuntimeError("No valid year values found for this query.")
+                return {
+                    "commodity": commodity,
+                    "year": None,
+                    "statistic_type": statistic_type,
+                    "units": None,
+                    "total_quantity": 0.0,
+                    "rankings": [],
+                }
             year = int(year_max)
         df = df[df[col.year] == year]
+        if df.empty:
+            return {
+                "commodity": commodity,
+                "year": year,
+                "statistic_type": statistic_type,
+                "units": None,
+                "total_quantity": 0.0,
+                "rankings": [],
+            }
 
         grouped = df.groupby(col.country, as_index=False)[col.value].sum()
         # Drop aggregate rows if present
@@ -295,6 +384,14 @@ class USGSMCSClient:
         df[col.value] = _parse_value(df[col.value])
         df[col.year] = _parse_year(df[col.year])
         df = df.dropna(subset=[col.value, col.year])
+
+        if df.empty:
+            return {
+                "country": country,
+                "year": int(year) if year is not None else 0,
+                "statistic_type": statistic_type,
+                "commodities": [],
+            }
 
         if year is None:
             year = int(df[col.year].max())
