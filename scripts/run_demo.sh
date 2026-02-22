@@ -35,7 +35,7 @@ echo "  USGS API -> http://localhost:${USGS_PORT}"
 echo "  Globe    -> http://localhost:${DOCS_PORT}/bgs_globe.html"
 echo ""
 if command -v open >/dev/null 2>&1; then
-  open "http://localhost:${DOCS_PORT}/bgs_globe.html?source=usgs&commodity=copper"
+  open "http://localhost:${DOCS_PORT}/bgs_globe.html?source=bgs&api_host=127.0.0.1"
 fi
 echo "Press Ctrl+C to stop all."
 

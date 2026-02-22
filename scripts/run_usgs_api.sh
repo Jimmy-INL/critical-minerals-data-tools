@@ -44,4 +44,5 @@ if [[ -n "${PIDS}" ]]; then
 fi
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../USGS_MCP"
+export USGS_MCS_LOCAL_CSV="${USGS_MCS_LOCAL_CSV:-/Users/abdomg/Documents/Projects/ModCon/critical-minerals-data-tools/data/World_Data_Release_MCS_2025/MCS2025_World_Data.csv}"
 uv run usgs-api
