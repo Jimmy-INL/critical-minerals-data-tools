@@ -10,4 +10,4 @@ if [[ -n "${PIDS}" ]]; then
 fi
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../docs/examples"
-python -m http.server "${PORT}"
+python3 -m http.server "${PORT}"

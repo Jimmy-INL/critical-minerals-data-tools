@@ -43,5 +43,5 @@ if [[ -n "${PIDS}" ]]; then
   kill -9 ${PIDS}
 fi
 
-cd "$(dirname "${BASH_SOURCE[0]}")/../USGS_MCP"
+cd "$(dirname "${BASH_SOURCE[0]}")/../packages/usgs-mcp"
 uv run usgs-api
