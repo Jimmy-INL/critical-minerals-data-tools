@@ -20,14 +20,16 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual environments
+# Virtual environments (single root venv replaces per-package venvs)
 .venv/
 venv/
 ENV/
 
 # uv
 .uv/
-uv.lock
+# Root uv.lock IS committed (do NOT add blanket uv.lock ignore)
+# Only ignore per-package lockfiles that should not exist
+packages/*/uv.lock
 
 # IDE
 .idea/
@@ -40,6 +42,7 @@ uv.lock
 .env
 .env.local
 .env.*.local
+!.env.example
 
 # Logs
 *.log
@@ -94,4 +97,4 @@ settings.local.json
 *.mcp.json
 
 # Local caches
-USGS_MCP/.cache/
+packages/usgs-mcp/.cache/
