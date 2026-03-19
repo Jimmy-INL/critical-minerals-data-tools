@@ -1,0 +1,37 @@
+{
+  "datasets": [
+    {
+      "id": "bgs_world_mineral_stats",
+      "source": "BGS",
+      "type": "production",
+      "description": "BGS World Mineral Statistics production/trade data",
+      "endpoint_hint": "/production/*",
+      "citation": "BGS World Mineral Statistics",
+      "coverage": "1970-2023"
+    },
+    {
+      "id": "usgs_mcs_world_2025",
+      "source": "USGS",
+      "type": "production",
+      "description": "USGS MCS 2025 world production data (local CSV)",
+      "path": "data/World_Data_Release_MCS_2025/MCS2025_World_Data.csv",
+      "coverage": "2023-2024"
+    },
+    {
+      "id": "critical_minerals_points",
+      "source": "Multiple",
+      "type": "geospatial",
+      "description": "Critical minerals geospatial point layers (4_Jason_260126)",
+      "path": "data/4_Jason_260126",
+      "coverage": "global"
+    },
+    {
+      "id": "osti_document_catalog",
+      "source": "OSTI",
+      "type": "documents",
+      "description": "DOE OSTI document catalog metadata",
+      "path": "data/OSTI_retrieval/document_catalog.json",
+      "coverage": "documents"
+    }
+  ]
+}
