@@ -546,6 +546,12 @@
           <h3>Analytics</h3>
           <canvas id="shareChart" class="chart analytics-chart"></canvas>
           <div class="note" id="insightsText">Insights will appear after data loads.</div>
+          <h3>Production History</h3>
+          <div class="note" id="timeseriesLabel">Select a country to view history.</div>
+          <canvas id="timeseriesChart" style="height:120px; width:100%;"></canvas>
+          <h3>Top Producers Comparison</h3>
+          <div class="note" id="comparisonLabel">Loads after ranking.</div>
+          <canvas id="comparisonChart" style="height:140px; width:100%;"></canvas>
           <h3>Provenance</h3>
           <div class="note" id="provenanceText">Source metadata will appear here.</div>
         </div>
@@ -613,6 +619,8 @@
         let globe = null;
         let shareChart = null;
         let countryChart = null;
+        let timeseriesChart = null;
+        let comparisonChart = null;
         let selectedCommodityIndex = null;
         let uraniumPoints = [];
         let currentRanking = null;
@@ -863,6 +871,131 @@
             throw new Error(`Uranium ${res.status}: ${text}`);
           }
           return res.json();
+        }
+
+        async function fetchTimeSeries(commodity, country) {
+          const base = sources[state.source].baseUrl();
+          if (!base) return null;
+          const params = new URLSearchParams({ commodity });
+          if (country) params.set("country", country);
+          try {
+            const res = await fetchJsonWithTimeout(`${base}/production/timeseries?${params}`, {}, 10000);
+            if (!res || !res.ok) return null;
+            return res.json();
+          } catch { return null; }
+        }
+
+        const tsColors = [
+          "rgba(72, 227, 200, 1)", "rgba(246, 184, 98, 1)", "rgba(122, 162, 255, 1)",
+          "rgba(255, 122, 89, 1)", "rgba(124, 255, 203, 1)",
+        ];
+        const tsBgColors = [
+          "rgba(72, 227, 200, 0.15)", "rgba(246, 184, 98, 0.15)", "rgba(122, 162, 255, 0.15)",
+          "rgba(255, 122, 89, 0.15)", "rgba(124, 255, 203, 0.15)",
+        ];
+
+        function renderTimeSeries(tsData, country) {
+          const label = document.getElementById("timeseriesLabel");
+          const ctx = document.getElementById("timeseriesChart");
+          if (!tsData || !tsData.data || !tsData.data.length) {
+            label.textContent = country ? `No history for ${country}.` : "No time series data.";
+            if (timeseriesChart) { timeseriesChart.destroy(); timeseriesChart = null; }
+            return;
+          }
+          label.textContent = `${tsData.commodity} — ${country} (${tsData.units || ""})`;
+          const years = tsData.data.map(d => d.year);
+          const values = tsData.data.map(d => d.quantity);
+          if (timeseriesChart) {
+            timeseriesChart.data.labels = years;
+            timeseriesChart.data.datasets[0].data = values;
+            timeseriesChart.data.datasets[0].label = country;
+            timeseriesChart.update();
+          } else {
+            timeseriesChart = new Chart(ctx, {
+              type: "line",
+              data: {
+                labels: years,
+                datasets: [{
+                  label: country,
+                  data: values,
+                  borderColor: tsColors[0],
+                  backgroundColor: tsBgColors[0],
+                  fill: true,
+                  tension: 0.3,
+                  pointRadius: 0,
+                  borderWidth: 2,
+                }],
+              },
+              options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, datalabels: { display: false } },
+                scales: {
+                  x: { ticks: { color: "#92a4bd", maxTicksLimit: 8 }, grid: { display: false } },
+                  y: { ticks: { color: "#92a4bd" }, grid: { color: "rgba(255,255,255,0.05)" } },
+                },
+              },
+            });
+          }
+        }
+
+        async function renderComparison(rankings, commodity) {
+          const label = document.getElementById("comparisonLabel");
+          const ctx = document.getElementById("comparisonChart");
+          if (!rankings || rankings.length < 2) {
+            label.textContent = "Need 2+ producers to compare.";
+            if (comparisonChart) { comparisonChart.destroy(); comparisonChart = null; }
+            return;
+          }
+          const top = rankings.slice(0, 5);
+          label.textContent = `${commodity} — Top ${top.length} producers over time`;
+          const datasets = await Promise.all(top.map(async (row, i) => {
+            const ts = await fetchTimeSeries(commodity, row.country);
+            if (!ts || !ts.data) return null;
+            return {
+              label: row.country,
+              data: ts.data.map(d => ({ x: d.year, y: d.quantity })),
+              borderColor: tsColors[i % tsColors.length],
+              backgroundColor: "transparent",
+              tension: 0.3,
+              pointRadius: 0,
+              borderWidth: 1.5,
+            };
+          }));
+          const valid = datasets.filter(Boolean);
+          if (!valid.length) {
+            label.textContent = "No comparison data available.";
+            if (comparisonChart) { comparisonChart.destroy(); comparisonChart = null; }
+            return;
+          }
+          // Gather all years from all datasets
+          const allYears = [...new Set(valid.flatMap(ds => ds.data.map(d => d.x)))].sort();
+          // Normalize to shared x-axis
+          valid.forEach(ds => {
+            const map = new Map(ds.data.map(d => [d.x, d.y]));
+            ds.data = allYears.map(yr => map.get(yr) ?? null);
+          });
+          if (comparisonChart) {
+            comparisonChart.data.labels = allYears;
+            comparisonChart.data.datasets = valid;
+            comparisonChart.update();
+          } else {
+            comparisonChart = new Chart(ctx, {
+              type: "line",
+              data: { labels: allYears, datasets: valid },
+              options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: true, labels: { color: "#92a4bd", boxWidth: 12, font: { size: 10 } } },
+                  datalabels: { display: false },
+                },
+                scales: {
+                  x: { ticks: { color: "#92a4bd", maxTicksLimit: 8 }, grid: { display: false } },
+                  y: { ticks: { color: "#92a4bd" }, grid: { color: "rgba(255,255,255,0.05)" } },
+                },
+                spanGaps: true,
+              },
+            });
+          }
         }
 
         function setRankList(rankings, onSelect, targetId = "rankList") {
@@ -1417,6 +1550,9 @@
             updatePoints(points);
           }
 
+          // Render top-producers comparison chart (non-blocking)
+          renderComparison(filtered, ranking.commodity);
+
           const focus = points[0];
           if (focus) {
             setTimeout(() => {
@@ -1447,6 +1583,9 @@
             currentProfile = null;
             setCountrySnapshot(row, null, () => {});
           }
+          // Fetch and render production history for this country+commodity
+          fetchTimeSeries(state.commodity, row.country).then(ts => renderTimeSeries(ts, row.country));
+
           await updateMines(row.country);
           await updateUranium(row.country);
           updatePoints(producers);
@@ -1467,6 +1606,10 @@
             document.getElementById("globalTotal").textContent = "—";
             document.getElementById("selectedCountry").textContent = "—";
             document.getElementById("selectedValue").textContent = "—";
+            if (timeseriesChart) { timeseriesChart.destroy(); timeseriesChart = null; }
+            if (comparisonChart) { comparisonChart.destroy(); comparisonChart = null; }
+            document.getElementById("timeseriesLabel").textContent = "Loading…";
+            document.getElementById("comparisonLabel").textContent = "Loading…";
             setRankList([], null, "topNList");
             setSubtitle(`Switching to ${state.source.toUpperCase()}…`);
             updateStatusPill(true, "Loading…");
