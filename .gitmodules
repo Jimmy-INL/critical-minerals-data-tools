@@ -1,0 +1,3 @@
+[submodule "packages/cmm-data"]
+	path = packages/cmm-data
+	url = git@github.com:Jimmy-INL/cmm-data.git
