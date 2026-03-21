@@ -226,7 +226,7 @@ class USGSMCSClient:
                 .str.contains(commodity, case=False, na=False, regex=False)
             ]
         if country:
-            out = out[out[col.country].astype(str).str.contains(country, case=False, na=False)]
+            out = out[out[col.country].astype(str).str.contains(country, case=False, na=False, regex=False)]
         if statistic_type and col.statistic:
             out = out[out[col.statistic].astype(str).str.contains(statistic_type, case=False, na=False)]
         return out

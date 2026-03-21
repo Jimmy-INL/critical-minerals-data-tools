@@ -1129,6 +1129,45 @@
           });
         }
 
+        function showOutageBanner(failedSource) {
+          const loading = document.getElementById("loading");
+          loading.textContent = "";
+          const wrap = document.createElement("div");
+          wrap.style.cssText = "text-align:center; max-width:480px; line-height:1.6;";
+
+          const title = document.createElement("div");
+          title.style.cssText = "font-size:20px; color:var(--accent-2); margin-bottom:12px;";
+          title.textContent = `${failedSource.toUpperCase()} Data Source Unavailable`;
+          wrap.appendChild(title);
+
+          const msg = document.createElement("div");
+          msg.style.cssText = "color:var(--muted); font-size:13px;";
+          msg.textContent = "The upstream service may be experiencing an outage. Please try again later.";
+          wrap.appendChild(msg);
+
+          const altSource = failedSource === "usgs" ? "bgs" : "usgs";
+          const linkWrap = document.createElement("div");
+          linkWrap.style.marginTop = "16px";
+          const link = document.createElement("a");
+          link.href = "#";
+          link.style.cssText = "color:var(--accent); text-decoration:underline; font-size:13px; cursor:pointer;";
+          link.textContent = `Switch to ${altSource.toUpperCase()} instead`;
+          link.addEventListener("click", async (e) => {
+            e.preventDefault();
+            loading.classList.add("hidden");
+            state.source = altSource;
+            sourceSelect.value = altSource;
+            await loadCommodities();
+            await loadYears();
+            await hydrateView();
+          });
+          linkWrap.appendChild(link);
+          wrap.appendChild(linkWrap);
+
+          loading.appendChild(wrap);
+          loading.classList.remove("hidden");
+        }
+
         function updateStatusPill(ok, message) {
           document.getElementById("statusText").textContent = message;
           document.querySelector(".dot").style.background = ok ? "var(--good)" : "var(--danger)";
@@ -1289,6 +1328,11 @@
         }
 
         async function hydrateView() {
+          // Dismiss any existing outage banner
+          const loading = document.getElementById("loading");
+          loading.textContent = "";
+          loading.classList.add("hidden");
+
           updateUrl();
           updateProvenance();
           buildSourceStatus();
@@ -1297,6 +1341,13 @@
           try {
             ranking = await fetchRanking();
           } catch (err) {
+            const isNetwork = err instanceof TypeError && err.message === "Failed to fetch";
+            const isTimeout = err.message && err.message.includes("timeout");
+            if (isNetwork || isTimeout) {
+              updateStatusPill(false, `${state.source.toUpperCase()} data source unreachable`);
+              showOutageBanner(state.source);
+              return;
+            }
             updateStatusPill(false, "Data source not reachable");
             throw err;
           }
@@ -1404,6 +1455,21 @@
         function setupListeners() {
           sourceSelect.addEventListener("change", async (e) => {
             state.source = e.target.value;
+            // Immediately clear old data so stale results don't linger
+            producers = [];
+            minePoints = [];
+            uraniumPoints = [];
+            if (globe) {
+              globe.pointsData([]);
+              globe.ringsData([]);
+            }
+            document.getElementById("topCountry").textContent = "—";
+            document.getElementById("globalTotal").textContent = "—";
+            document.getElementById("selectedCountry").textContent = "—";
+            document.getElementById("selectedValue").textContent = "—";
+            setRankList([], null, "topNList");
+            setSubtitle(`Switching to ${state.source.toUpperCase()}…`);
+            updateStatusPill(true, "Loading…");
             await loadCommodities();
             await loadYears();
             await updateAskLabel();
@@ -1623,13 +1689,18 @@
 
         init().catch((err) => {
           console.error(err);
-          const loading = document.getElementById("loading");
-          const base = sources[state.source].baseUrl() || `http://${apiHost}:8000`;
-          const detail = err && err.message ? ` (${err.message})` : "";
-          loading.textContent =
-            `Failed to load data. Is the API running at ${base}?${detail} ` +
-            "Open DevTools → Console for details.";
-          loading.classList.add("hidden");
+          const isNetwork = err instanceof TypeError && err.message === "Failed to fetch";
+          const isTimeout = err.message && err.message.includes("timeout");
+          if (isNetwork || isTimeout) {
+            showOutageBanner(state.source);
+          } else {
+            const loading = document.getElementById("loading");
+            const base = sources[state.source].baseUrl() || `http://${apiHost}:8000`;
+            const detail = err && err.message ? ` (${err.message})` : "";
+            loading.textContent =
+              `Failed to load data. Is the API running at ${base}?${detail} ` +
+              "Check DevTools console for details.";
+          }
         });
       })();
     </script>
