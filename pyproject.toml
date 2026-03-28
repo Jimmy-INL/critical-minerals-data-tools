@@ -3,6 +3,11 @@ name = "critical-minerals-workspace"
 version = "0.1.0"
 description = "Unified workspace for critical minerals MCP servers and data tools"
 requires-python = ">=3.10"
+dependencies = [
+    "nbclassic>=1.3.3",
+    "notebook>=7.5.5",
+    "plotly>=6.6.0",
+]
 
 # ── uv workspace ──────────────────────────────────────────────
 [tool.uv.workspace]
@@ -40,6 +45,35 @@ dev = [
     "uncomtrade-mcp",
     "usgs-mcp",
     "unified-data-api",
+    # ── Notebook dependencies ────────────────────────────────
+    # Core (all notebooks)
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "kaleido>=0.2.0",
+    "matplotlib>=3.7.0",
+    # Network / graph analysis (02, 08)
+    "networkx>=3.0",
+    # ML / classical (03, 04, 07)
+    "scikit-learn>=1.3.0",
+    "statsforecast>=1.7.0",
+    "datasetsforecast>=0.0.8",
+    "hdbscan>=0.8.33",
+    "umap-learn>=0.5.0",
+    # Embeddings (04, 06)
+    "sentence-transformers>=2.2.0",
+    "faiss-cpu>=1.7.0",
+    # Deep learning / FMs (03_FM, 07_FM, 09, 10)
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "transformers>=4.45.0,<4.50.0",
+    "open-clip-torch>=2.20.0",
+    "Pillow>=9.0.0",
+    # Time-series FMs (03_FM)
+    "chronos-forecasting>=1.0.0",
+    "gluonts>=0.14.0",
+    "lag-llama @ git+https://github.com/time-series-foundation-models/lag-llama.git",
+    # LLM RAG (06_FM)
+    "openai>=1.0.0",
 ]
 
 # ── Ruff (shared across all workspace members) ───────────────
